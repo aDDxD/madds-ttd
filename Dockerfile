@@ -1,10 +1,12 @@
 FROM python:3.12.3-slim
 
-WORKDIR /app
+WORKDIR /madds-ttd
 
-COPY . .
+COPY ./app ./app
+COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --upgrade pip
 
 EXPOSE 80
 EXPOSE 8501
