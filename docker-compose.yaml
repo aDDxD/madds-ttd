@@ -1,10 +1,36 @@
 services:
-  postgres:
+  ttd:
+    platform: linux/amd64
+    container_name: ttd
+    hostname: ttd
+    build: .
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    env_file:
+      - ./.env
+    ports:
+      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8501:8501"
+    volumes:
+      - .:/app
+    networks:
+      - local-network
+
+  database:
+    platform: linux/amd64
+    container_name: database
+    hostname: database
     image: postgres:16
-    container_name: postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./postgres/db:/var/lib/postgresql/data
+    networks:
+      - local-network
+
+networks:
+  local-network:
+    driver: bridge
