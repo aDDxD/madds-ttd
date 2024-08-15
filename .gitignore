@@ -175,3 +175,6 @@ pyrightconfig.json
 
 # VS Code settings
 .vscode/
+
+# Data file
+app/data/*.csv
