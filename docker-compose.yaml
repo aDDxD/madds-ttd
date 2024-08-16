@@ -4,11 +4,10 @@ services:
     container_name: ttd
     hostname: ttd
     build: .
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["streamlit", "run", "app/main.py", "--server.port=8501"]
     env_file:
       - ./.env
     ports:
-      - "8000:8000"
       - "8501:8501"
     volumes:
       - ./app:/madds-ttd/app
@@ -26,7 +25,7 @@ services:
     ports:
       - "1433:1433"
     volumes:
-    - ./app/data:/var/opt/mssql/backup
+      - ./app/data:/var/opt/mssql/backup
     networks:
       - local-network
 
