@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load the database URL from environment variables
-DATABASE_URL = os.getenv("OLTP_DATABASE_URL")
+DATABASE_URL = os.getenv("DW_DATABASE_URL")
 
 # Create the database connection using SQLAlchemy with a timeout
 engine = create_engine(DATABASE_URL, connect_args={"timeout": 30})
