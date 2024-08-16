@@ -1,11 +1,15 @@
 import plotly.express as px
 import streamlit as st
-from app.services.prompt_service import process_query
+
+from app.core.llm_service import LLMService
 
 # Set Streamlit page configuration
 st.set_page_config(layout="wide")
 
 st.title("Talk to Your Data")
+
+# Initialize the LLMService
+llm_service = LLMService()
 
 # Input prompt from the user
 prompt = st.text_input("Enter your query:")
@@ -13,8 +17,9 @@ prompt = st.text_input("Enter your query:")
 if st.button("Submit Query"):
     if prompt:
         try:
-            # Directly call the process_query function
-            result_df, sql_query, visualization_suggestions = process_query(prompt)
+            result_df, sql_query, visualization_suggestions = llm_service.process_query(
+                prompt
+            )
 
             st.write("### SQL Query:")
             st.text(sql_query)
