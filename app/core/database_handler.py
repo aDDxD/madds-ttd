@@ -69,7 +69,9 @@ class DatabaseHandler:
             if not schema:
                 self.logger.warning("No schema information was retrieved.")
             else:
-                self.logger.info("Retrieved Schema: %s", schema)
+                self.logger.info(
+                    "Schema retrieved successfully with %d tables.", len(schema)
+                )
 
             return self._schema_to_string(schema)
         except SQLAlchemyError as e:
@@ -90,8 +92,9 @@ class DatabaseHandler:
             if df.empty:
                 self.logger.warning("Query executed but returned no results.")
             else:
-                self.logger.info("Executed SQL Query: %s", query)
-                self.logger.info("Query returned %d rows.", len(df))
+                self.logger.info(
+                    "Query executed successfully and returned %d rows.", len(df)
+                )
             return df
         except SQLAlchemyError as e:
             self.logger.error("Error executing SQL query: %s", str(e))

@@ -1,5 +1,3 @@
-import os
-
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
@@ -28,6 +26,9 @@ class LLMService:
         """
         schema = self.db_manager.get_schema()
         if not schema:
+            self.logger.error(
+                "Failed to generate analysis description: Schema is empty."
+            )
             raise ValueError(
                 "Schema could not be retrieved. Ensure the database is accessible."
             )
@@ -43,6 +44,7 @@ class LLMService:
 
         description_prompt = prompt_template.format()
         response = self.llm.invoke([{"role": "system", "content": description_prompt}])
+        self.logger.info("Analysis description generated successfully.")
         return response.content.strip()
 
     def process_data_analysis(
@@ -57,9 +59,14 @@ class LLMService:
         """
         schema = self.db_manager.get_schema()
         if not schema:
+            self.logger.error("Failed to process data analysis: Schema is empty.")
             raise ValueError(
                 "Schema could not be retrieved. Ensure the database is accessible."
             )
+
+        self.logger.info(
+            "Processing data analysis for query: %s", natural_language_query
+        )
 
         prompt_template = ChatPromptTemplate.from_template(
             template=(
@@ -79,8 +86,11 @@ class LLMService:
             self.extract_query_visualizations_layout(response_content)
         )
         sql_query = self.clean_sql_query(sql_query)
+
+        self.logger.info("Executing SQL query generated from LLM.")
         result_df = self.db_manager.execute_sql(sql_query)
 
+        self.logger.info("Data analysis completed successfully.")
         return result_df, sql_query, visualization_suggestions, layout_suggestions
 
     def clean_sql_query(self, sql_query: str) -> str:
