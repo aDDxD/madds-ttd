@@ -19,12 +19,21 @@ schema_str = schema_to_string(schema)
 
 
 def process_query(natural_language_query: str):
+    # Retrieve and clean the schema
+    schema = clean_schema(get_schema())
+    schema_str = schema_to_string(schema)
+
+    if not schema:
+        raise ValueError(
+            "Schema could not be retrieved. Ensure the database is accessible and try again."
+        )
+
     prompt_template = ChatPromptTemplate.from_template(
         template=(
-            f"Based on the following schema information: {schema_str}, "
+            f"Based on the following SQL Server schema information: {schema_str}, "
             f"generate a SQL query for the given natural language query: {{query}}, "
-            f"and suggest the best types of visualizations for the data. Provide the SQL query and the visualization suggestions in the following format:\n\n"
-            f"SQL Query: ```\n{{query}}\n```\nVisualization Suggestions: {{visualizations}}"
+            f"and suggest the best types of visualizations for the data. "
+            f"Ensure the SQL query is compatible with Microsoft SQL Server."
         )
     )
 
@@ -41,13 +50,26 @@ def process_query(natural_language_query: str):
         response_content
     )
 
-    # Clean up the SQL query to remove any unwanted text, such as "sql"
-    if sql_query.lower().startswith("sql"):
-        sql_query = sql_query[sql_query.lower().index("select") :].strip()
+    # Clean up any unintended prefixes or keywords in the SQL query
+    sql_query = clean_sql_query(sql_query)
 
     result_df = execute_sql(sql_query)
 
     return result_df, sql_query, visualization_suggestions
+
+
+def clean_sql_query(sql_query: str) -> str:
+    """Clean the SQL query to remove any unintended prefixes or keywords."""
+    # Remove the 'sql' keyword if it mistakenly appears at the beginning
+    sql_query = sql_query.lstrip().lower().replace("sql\n", "").replace("sql ", "")
+
+    # Post-process the SQL query to replace LIMIT with TOP for SQL Server
+    if "LIMIT" in sql_query.upper():
+        limit_value = sql_query.split("LIMIT")[1].strip().rstrip(";")
+        sql_query = sql_query.split("LIMIT")[0].strip()
+        sql_query = sql_query.replace("SELECT", f"SELECT TOP {limit_value}")
+
+    return sql_query.strip()
 
 
 def extract_query_and_visualizations(response_content):

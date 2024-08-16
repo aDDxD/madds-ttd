@@ -9,22 +9,28 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load the database URL from environment variables
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://postgres:postgres@postgres:5432/postgres"
-)
+DATABASE_URL = os.getenv("OLTP_DATABASE_URL")
 
-# Create the database connection using SQLAlchemy
-engine = create_engine(DATABASE_URL)
+# Create the database connection using SQLAlchemy with a timeout
+engine = create_engine(DATABASE_URL, connect_args={"timeout": 30})
 
 
 def get_schema():
-    """Retrieve the database schema information."""
+    """Retrieve the database schema information from all schemas."""
     try:
         inspector = inspect(engine)
         schema = {}
-        for table_name in inspector.get_table_names():
-            columns = [column["name"] for column in inspector.get_columns(table_name)]
-            schema[table_name] = columns
+        # Get all schema names
+        schema_names = inspector.get_schema_names()
+
+        for schema_name in schema_names:
+            for table_name in inspector.get_table_names(schema=schema_name):
+                columns = [
+                    column["name"]
+                    for column in inspector.get_columns(table_name, schema=schema_name)
+                ]
+                # Store the schema-qualified table name
+                schema[f"{schema_name}.{table_name}"] = columns
 
         # Log the retrieved schema
         logger.info("Retrieved Schema: %s", schema)
@@ -65,13 +71,7 @@ def schema_to_string(schema):
 def execute_sql(query: str):
     """Execute a SQL query and return the result as a DataFrame."""
     try:
-        # Extract table name from the query (assuming a simple SELECT query structure)
-        table_name = query.split("FROM")[1].split()[0].strip()
-
-        # Check if the table exists in the schema
-        if table_name not in clean_schema(get_schema()):
-            raise ValueError(f"Table '{table_name}' does not exist in the database.")
-
+        # Directly execute the SQL query without trying to manually parse it
         with engine.connect() as connection:
             result = connection.execute(text(query))
             df = pd.DataFrame(result.fetchall(), columns=result.keys())
