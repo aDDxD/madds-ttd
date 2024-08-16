@@ -2,7 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.logger import get_logger
+from app.core.utils.logger import get_logger
 
 
 class DatabaseHandler:

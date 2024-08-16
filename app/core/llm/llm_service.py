@@ -1,9 +1,9 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
-from app.core.config import Config
-from app.core.database_handler import DatabaseHandler
-from app.core.logger import get_logger
+from app.core.data_sources.database_handler import DatabaseHandler
+from app.core.utils.config import Config
+from app.core.utils.logger import get_logger
 
 
 class LLMService:
