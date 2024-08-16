@@ -33,11 +33,12 @@ def process_query(natural_language_query: str):
             f"Based on the following SQL Server schema information: {schema_str}, "
             f"generate a SQL query for the given natural language query: {{query}}, "
             f"and suggest the best types of visualizations for the data. "
-            f"Ensure the SQL query is compatible with Microsoft SQL Server."
+            f"Do your best to get the most realistic possible analysis based on your knowled and naming conventions. "
+            f"Ensure the SQL query is compatible with Microsoft SQL Server. "
+            f"Never try to query columns not present on the previously provided schema."
         )
     )
-
-    llm = ChatOpenAI(model="gpt-3.5-turbo")
+    llm = ChatOpenAI(model="gpt-4o-mini")
 
     sql_query_prompt = prompt_template.format(
         query=natural_language_query, visualizations=""
