@@ -178,3 +178,4 @@ pyrightconfig.json
 
 # Data file
 app/data/*.csv
+app/data/*.bak
