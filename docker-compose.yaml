@@ -29,14 +29,6 @@ services:
     networks:
       - local-network
 
-  chromadb:
-    image: chromadb/chroma:0.5.6.dev56
-    container_name: chromadb
-    ports:
-      - "8000:8000"
-    networks:
-      - local-network
-
 networks:
   local-network:
     driver: bridge
