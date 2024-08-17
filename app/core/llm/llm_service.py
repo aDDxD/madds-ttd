@@ -1,9 +1,24 @@
+import json
+from typing import List
+
+from langchain.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
 
 from app.core.data_sources.database_handler import DatabaseHandler
 from app.core.utils.config import Config
 from app.core.utils.logger import get_logger
+
+
+class VisualizationItem(BaseModel):
+    description: str
+    sql_query: str
+    visualization: str
+
+
+class DataAnalysisResponse(BaseModel):
+    visualizations: List[VisualizationItem]
 
 
 class LLMService:
@@ -17,6 +32,8 @@ class LLMService:
         self.logger = get_logger(self.__class__.__name__)
         self.db_manager = DatabaseHandler(database_url)
         self.llm = ChatOpenAI(model=model_name, openai_api_key=Config.OPENAI_API_KEY)
+        # Create an output parser using the Pydantic model
+        self.output_parser = PydanticOutputParser(pydantic_object=DataAnalysisResponse)
 
     def generate_analysis_description(self):
         """
@@ -48,105 +65,70 @@ class LLMService:
         return response.content.strip()
 
     def process_data_analysis(
-        self, natural_language_query: str, db_type: str = "SQL Server"
+        self,
+        natural_language_query: str,
+        db_type: str = "SQL Database",
+        schema: str = "",
     ):
         """
-        Process a natural language query to generate a SQL query, visualizations, and layout suggestions.
-
-        :param natural_language_query: The natural language query from the user.
-        :param db_type: The type of database for which the query should be compatible (e.g., SQL Server, PostgreSQL).
-        :return: A tuple containing the DataFrame, SQL query, and visualization suggestions.
+        Process the natural language query and return a structured JSON response.
         """
-        schema = self.db_manager.get_schema()
-        if not schema:
-            self.logger.error("Failed to process data analysis: Schema is empty.")
-            raise ValueError(
-                "Schema could not be retrieved. Ensure the database is accessible."
-            )
-
-        self.logger.info(
-            "Processing data analysis for query: %s", natural_language_query
-        )
-
         prompt_template = ChatPromptTemplate.from_template(
             template=(
-                f"Based on the following {db_type} schema information:\n{schema}\n"
-                f"Generate a SQL query for the given natural language query: '{{query}}'. "
-                f"The SQL query must be compatible with {db_type}. Ensure the model never tries to query a table "
-                f"that is not present in the provided schema. Additionally, provide specific suggestions for "
-                f"visualizations and layout that best represent the data based on this query."
+                f"You are a professional Data Analyst with expertise in {db_type} databases. "
+                f"Given the following schema: {schema} "
+                f"your task is to generate meaningful insights from the natural language query: '{{{{query}}}}'. "
+                f"Provide as many visualizations as necessary to comprehensively address the query. "
+                f"Your response must be structured as a JSON object adhering to the following schema: "
+                "{json_schema} "
+                f"Each item in the 'visualizations' array should include: "
+                f"- 'description': A brief explanation of the suggested data visualization and its purpose. "
+                f"- 'sql_query': A valid SQL query that must compatible with the {db_type} database. Ensure the query only references columns available in the provided schema. "
+                f"- 'visualization': Suggested visualization type (e.g., bar, line, pie, etc.). "
+                "Your analysis should be both accurate and actionable, helping to uncover key trends, comparisons, and insights from the data."
             )
         )
 
-        sql_query_prompt = prompt_template.format(query=natural_language_query)
-        response = self.llm.invoke([{"role": "system", "content": sql_query_prompt}])
-        response_content = response.content
+        schema_description = "{'visualizations': [{'description': 'string', 'sql_query': 'string', 'visualization': 'string'}]}"
 
-        sql_query, visualization_suggestions, layout_suggestions = (
-            self.extract_query_visualizations_layout(response_content)
+        formatted_prompt = prompt_template.format(
+            query=natural_language_query, json_schema=schema_description
         )
-        sql_query = self.clean_sql_query(sql_query)
+        response = self.llm.invoke([{"role": "system", "content": formatted_prompt}])
 
-        self.logger.info("Executing SQL query generated from LLM.")
-        result_df = self.db_manager.execute_sql(sql_query)
+        # Parse the response using the output parser
+        return self.output_parser.parse(response.content)
 
-        self.logger.info("Data analysis completed successfully.")
-        return result_df, sql_query, visualization_suggestions, layout_suggestions
-
-    def clean_sql_query(self, sql_query: str) -> str:
+    def extract_query_visualizations(self, response_content: str):
         """
-        Clean the SQL query by removing unnecessary prefixes and keywords.
+        Extract the SQL queries, visualizations, and descriptions from the LLM response.
 
-        :param sql_query: The raw SQL query string.
-        :return: The cleaned SQL query string.
+        :param response_content: The JSON-formatted content returned by the LLM.
+        :return: A list of dictionaries with cleaned SQL queries, visualization types, and descriptions.
         """
-        sql_query = sql_query.lstrip().lower().replace("sql\n", "").replace("sql ", "")
-        if "LIMIT" in sql_query.upper():
-            limit_value = sql_query.split("LIMIT")[1].strip().rstrip(";")
-            sql_query = sql_query.split("LIMIT")[0].strip()
-            sql_query = sql_query.replace("SELECT", f"SELECT TOP {limit_value}")
-        return sql_query.strip()
+        try:
+            self.logger.info("Rsponse content before json loads: %s", response_content)
+            # Parse the JSON content
+            response_dict = json.loads(response_content)
 
-    def extract_query_visualizations_layout(self, response_content):
-        """
-        Extract the SQL query, visualization suggestions, and layout suggestions from the LLM response.
+            # Iterate over the items, clean SQL queries, and store the results
+            results = []
+            for item in response_dict:
+                # Clean the SQL query
+                cleaned_sql = item["sql_query"].strip().lower()
 
-        :param response_content: The content returned by the LLM.
-        :return: A tuple containing the SQL query, visualization suggestions, and layout suggestions.
-        """
-        if (
-            "SQL Query:" in response_content
-            and "Visualization Suggestions:" in response_content
-            and "Layout Suggestions:" in response_content
-        ):
-            sql_query_part = (
-                response_content.split("SQL Query:")[1]
-                .split("Visualization Suggestions:")[0]
-                .strip()
+                results.append(
+                    {
+                        "description": item["description"],
+                        "sql_query": cleaned_sql,
+                        "visualization": item["visualization"],
+                    }
+                )
+
+            return results
+
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Failed to parse JSON response: {str(e)}")
+            raise ValueError(
+                "Failed to parse LLM response. Ensure the response is in valid JSON format."
             )
-            sql_query = sql_query_part.split("```")[1].strip()
-
-            visualization_suggestions_part = (
-                response_content.split("Visualization Suggestions:")[1]
-                .split("Layout Suggestions:")[0]
-                .strip()
-            )
-            visualization_suggestions = [
-                s.strip()
-                for s in visualization_suggestions_part.split("\n")
-                if s.strip()
-            ]
-
-            layout_suggestions_part = response_content.split("Layout Suggestions:")[
-                1
-            ].strip()
-            layout_suggestions = [
-                s.strip() for s in layout_suggestions_part.split("\n") if s.strip()
-            ]
-
-        else:
-            sql_query = response_content.split("```")[1].strip()
-            visualization_suggestions = ["bar"]
-            layout_suggestions = []
-
-        return sql_query, visualization_suggestions, layout_suggestions

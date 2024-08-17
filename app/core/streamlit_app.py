@@ -1,4 +1,3 @@
-import plotly.express as px
 import streamlit as st
 
 from app.core.llm.llm_service import LLMService
@@ -48,51 +47,20 @@ class StreamlitApp:
         if st.button("Submit Query"):
             if prompt:
                 try:
-                    (
-                        result_df,
-                        sql_query,
-                        visualization_suggestions,
-                        layout_suggestions,
-                    ) = self.llm_service.process_data_analysis(prompt)
+                    # Get the structured response from LLM
+                    structured_response = self.llm_service.process_data_analysis(prompt)
 
-                    st.write("### SQL Query:")
-                    st.text(sql_query)
+                    # Display the raw response for debugging
+                    st.write("### Raw LLM Response:")
+                    st.text_area("LLM Response", structured_response, height=400)
 
-                    st.write("### Data Result:")
-                    st.dataframe(result_df)
-
-                    st.write("### Visualizations and Layout Suggestions:")
-                    for suggestion in visualization_suggestions:
-                        st.write(f"#### {suggestion.capitalize()} Visualization")
-                        if "bar" in suggestion.lower():
-                            fig = px.bar(
-                                result_df,
-                                x=result_df.columns[0],
-                                y=result_df.columns[1],
-                            )
-                        elif "line" in suggestion.lower():
-                            fig = px.line(
-                                result_df,
-                                x=result_df.columns[0],
-                                y=result_df.columns[1],
-                            )
-                        elif "scatter" in suggestion.lower():
-                            fig = px.scatter(
-                                result_df,
-                                x=result_df.columns[0],
-                                y=result_df.columns[1],
-                            )
-                        elif "pie" in suggestion.lower():
-                            fig = px.pie(
-                                result_df,
-                                names=result_df.columns[0],
-                                values=result_df.columns[1],
-                            )
-                        st.plotly_chart(fig)
-
-                    st.write("### Layout Suggestions:")
-                    for suggestion in layout_suggestions:
-                        st.write(f"- {suggestion}")
+                    # Display the structured data for debugging
+                    st.write("### Extracted Data:")
+                    for i, item in enumerate(structured_response.visualizations):
+                        st.write(f"**Visualization {i + 1}:**")
+                        st.write(f"- **Description:** {item.description}")
+                        st.write(f"- **SQL Query:** {item.sql_query}")
+                        st.write(f"- **Visualization Type:** {item.visualization}")
 
                 except Exception as e:
                     st.error(f"Error processing query: {str(e)}")
