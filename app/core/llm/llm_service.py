@@ -112,7 +112,7 @@ class LLMService:
         prompt_template = ChatPromptTemplate.from_template(
             template=(
                 f"You are an elite Data Analyst with profound expertise in {db_type} databases. "
-                f"Your task is to deliver highly accurate, contextually relevant, and insightful visualizations based on the natural language query: '{{{{query}}}}'. "
+                f"Your task is to deliver highly accurate, contextually relevant, and insightful visualizations based on the natural language query: '{{{{query}}}} based on the provided database schema'. "
                 f"You are given the following database schema: {formatted_schema}. Use it to ensure the integrity and relevance of your analysis. "
                 f"Your focus should be on extracting and presenting insights that are directly aligned with the user's query. Follow these detailed guidelines to achieve the best results: \n\n"
                 f"1. **Understand the User's Intent**: Thoroughly analyze the natural language query to grasp the exact information the user is seeking. Consider whether the query is asking for trends, comparisons, distributions, correlations, or specific data points. Tailor your visualizations accordingly.\n"
