@@ -1,13 +1,21 @@
+import json
+
+import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 from app.core.llm.llm_service import LLMService
 from app.core.utils.config import Config
+from app.core.utils.logger import get_logger
 
 
 class StreamlitApp:
     def __init__(self):
         # Set Streamlit page configuration
         st.set_page_config(layout="wide")
+
+        # Initialize a logger for this class
+        self.logger = get_logger(self.__class__.__name__)
 
         # Initialize the LLMService with your database URL
         self.database_url = (
@@ -50,11 +58,19 @@ class StreamlitApp:
                     # Get the structured response from LLM
                     structured_response = self.llm_service.process_data_analysis(prompt)
 
+                    # Log the structured response for debugging
+                    self.logger.debug("Structured Response: %s", structured_response)
+
+                    # Convert the structured response to a JSON string for display
+                    structured_response_json = json.dumps(
+                        structured_response.dict(), indent=2
+                    )
+
                     # Display the raw response for debugging
                     st.write("### Raw LLM Response:")
-                    st.text_area("LLM Response", structured_response, height=400)
+                    st.text_area("LLM Response", structured_response_json, height=400)
 
-                    # Display the structured data for debugging
+                    # Display the structured data and generate visualizations
                     st.write("### Extracted Data:")
                     for i, item in enumerate(structured_response.visualizations):
                         st.write(f"**Visualization {i + 1}:**")
@@ -65,7 +81,22 @@ class StreamlitApp:
                             f"- **Plotly Express Function:** {item.plotly_express_function}"
                         )
 
+                        # Execute the SQL query to get the data
+                        df = self.llm_service.db_manager.execute_sql(item.sql_query)
+
+                        # Replace 'data' with 'df' in the Plotly Express function
+                        plotly_code = item.plotly_express_function.replace("data", "df")
+
+                        # Dynamically execute the Plotly Express function with 'df'
+                        chart = eval(plotly_code, {"df": df, "px": px})
+
+                        # Display the chart using Streamlit
+                        st.plotly_chart(chart)
+
                 except Exception as e:
+                    self.logger.error(
+                        f"Error processing query: {str(e)}", exc_info=True
+                    )
                     st.error(f"Error processing query: {str(e)}")
             else:
                 st.warning("Please enter a query.")
