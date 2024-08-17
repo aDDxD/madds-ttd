@@ -167,11 +167,13 @@ class DatabaseHandler(DataSourceHandler):
             self.logger.error(f"Error retrieving schema: {str(e)}")
             raise
 
-    def execute_sql(self, query: str) -> pd.DataFrame:
+    def execute_sql(self, query: str, params: dict = None) -> pd.DataFrame:
         """Execute a SQL query and return the result as a DataFrame."""
         try:
             with self.engine.connect() as connection:
-                result = connection.execute(text(query))
+                if params is None:
+                    params = {}
+                result = connection.execute(text(query), **params)
                 df = pd.DataFrame(result.fetchall(), columns=result.keys())
             if df.empty:
                 self.logger.warning("Query executed but returned no results.")
