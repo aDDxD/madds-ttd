@@ -81,7 +81,7 @@ class StreamlitApp:
                         st.write(f"- **Description:** {item.description}")
 
                         # Execute the SQL query to get the data
-                        df = self.llm_service.db_manager.execute_sql(item.sql_query)
+                        df = self.llm_service.db_handler.execute_sql(item.sql_query)
 
                         # Replace 'data' with 'df' in the Plotly Express function
                         plotly_code = item.plotly_express_function.replace("data", "df")

@@ -17,7 +17,7 @@ class LLMService:
         :param model_name: The name of the language model to use. Default is "gpt-4o-mini".
         """
         self.logger = Logger(self.__class__.__name__).get_logger()
-        self.db_manager = DatabaseHandler(database_url)
+        self.db_handler = DatabaseHandler(database_url)
         self.llm = ChatOpenAI(model=model_name, openai_api_key=Config.OPENAI_API_KEY)
 
         # Create an output parser using the Pydantic model
@@ -31,10 +31,10 @@ class LLMService:
         """
         try:
             self.logger.info("Retrieving database schema...")
-            raw_schema = self.db_manager.get_schema()
+            raw_schema = self.db_handler.get_schema()
             self.logger.info("Schema retrieved: %d tables found.", len(raw_schema))
 
-            formatted_schema = self.db_manager.schema_to_string(raw_schema)
+            formatted_schema = self.db_handler.schema_to_string(raw_schema)
             self.logger.info("Schema formatted successfully.")
 
             if not formatted_schema:
@@ -72,10 +72,10 @@ class LLMService:
         """
         Process the natural language query and return a structured JSON response.
         """
-        raw_schema = self.db_manager.get_schema()
+        raw_schema = self.db_handler.get_schema()
         self.logger.info("Schema retrieved with %d tables.", len(raw_schema))
 
-        formatted_schema = self.db_manager.schema_to_string(raw_schema)
+        formatted_schema = self.db_handler.schema_to_string(raw_schema)
         self.logger.info("Formatted schema for prompt: %s", formatted_schema[:500])
 
         prompt_template = Prompts.data_analysis_prompt(formatted_schema, db_type)

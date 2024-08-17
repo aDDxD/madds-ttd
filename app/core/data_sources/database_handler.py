@@ -86,9 +86,6 @@ class DatabaseHandler:
                     table_name, schema=schema_name
                 )
             except NotImplementedError:
-                self.logger.warning(
-                    f"Unique constraints not supported for {schema_name}.{table_name} with the current database dialect."
-                )
                 unique_constraints = []
 
             return {
