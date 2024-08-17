@@ -100,7 +100,7 @@ class LLMService:
         self.logger.info("Schema retrieved with %d tables.", len(raw_schema))
 
         formatted_schema = self.db_manager.schema_to_string(raw_schema)
-        self.logger.info("Formatted schema generated for prompt.")
+        self.logger.info(f"Formatted schema generated for prompt. {formatted_schema}")
 
         # Log schema summary instead of the whole schema
         self.logger.info("Schema contains %d tables.", len(raw_schema))

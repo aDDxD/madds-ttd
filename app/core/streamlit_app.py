@@ -1,6 +1,5 @@
 import json
 
-import pandas as pd
 import plotly.express as px
 import streamlit as st
 
@@ -18,9 +17,7 @@ class StreamlitApp:
         self.logger = get_logger(self.__class__.__name__)
 
         # Initialize the LLMService with your database URL
-        self.database_url = (
-            Config.DW_DATABASE_URL
-        )  # You can replace this with other databases as needed
+        self.database_url = Config.DW_DATABASE_URL
         self.llm_service = LLMService(database_url=self.database_url)
 
         # Initialize session state for database overview
@@ -28,29 +25,33 @@ class StreamlitApp:
             st.session_state["analysis_description"] = None
 
     def show_database_overview(self):
-        """Displays the database overview when the app starts."""
-        st.write("### Database Overview")
+        """Displays the database overview in the sidebar."""
+        st.sidebar.title("Database Overview")
         try:
             if st.session_state["analysis_description"] is None:
                 analysis_description = self.llm_service.generate_analysis_description()
                 st.session_state["analysis_description"] = analysis_description
 
-            st.markdown(
+            st.sidebar.markdown(
                 f"<div style='width: auto; word-wrap: break-word;'>{st.session_state['analysis_description']}</div>",
                 unsafe_allow_html=True,
             )
         except Exception as e:
-            st.error(f"Error generating analysis description: {str(e)}")
+            st.sidebar.error(f"Error generating analysis description: {str(e)}")
 
     def run(self):
         """Runs the main Streamlit application."""
         st.title("Talk to Your Data")
+        st.subheader("Interact with your database using natural language queries")
 
-        # Display the database overview once when the app starts
+        # Display the database overview in the sidebar
         self.show_database_overview()
 
-        # Input prompt from the user
-        prompt = st.text_input("Enter your query:")
+        # Main area for user input and output
+        prompt = st.text_input(
+            "Enter Your Query:",
+            placeholder="e.g., Show total sales by product category",
+        )
 
         if st.button("Submit Query"):
             if prompt:
@@ -67,19 +68,14 @@ class StreamlitApp:
                     )
 
                     # Display the raw response for debugging
-                    st.write("### Raw LLM Response:")
-                    st.text_area("LLM Response", structured_response_json, height=400)
+                    with st.expander("Inspect LLM Response"):
+                        st.text_area(structured_response_json, height=400)
 
                     # Display the structured data and generate visualizations
-                    st.write("### Extracted Data:")
+                    st.write("## Generated Visualizations")
                     for i, item in enumerate(structured_response.visualizations):
-                        st.write(f"**Visualization {i + 1}:**")
+                        st.write(f"### **Visualization {i + 1}:**")
                         st.write(f"- **Description:** {item.description}")
-                        st.write(f"- **SQL Query:** {item.sql_query}")
-                        st.write(f"- **Visualization Type:** {item.visualization}")
-                        st.write(
-                            f"- **Plotly Express Function:** {item.plotly_express_function}"
-                        )
 
                         # Execute the SQL query to get the data
                         df = self.llm_service.db_manager.execute_sql(item.sql_query)
@@ -92,6 +88,10 @@ class StreamlitApp:
 
                         # Display the chart using Streamlit
                         st.plotly_chart(chart)
+
+                        # Add collapsible section to show the data used for the chart
+                        with st.expander("Show Data Used for the Chart"):
+                            st.dataframe(df)
 
                 except Exception as e:
                     self.logger.error(
