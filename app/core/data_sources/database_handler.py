@@ -2,38 +2,25 @@ import pandas as pd
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.core.data_sources.data_source_handler import DataSourceHandler
 from app.core.utils.logger import Logger
 
 
-class DatabaseHandler:
+class DatabaseHandler(DataSourceHandler):
     def __init__(self, database_url: str):
-        """
-        Initialize the DatabaseHandler with a connection to the database.
-
-        :param database_url: The URL of the database to connect to.
-        """
         self.logger = Logger(self.__class__.__name__).get_logger()
         self.engine = self._connect_to_database(database_url)
 
     def _connect_to_database(self, database_url: str):
-        """
-        Establish a connection to the database.
-
-        :param database_url: The database connection URL.
-        :return: A SQLAlchemy engine instance.
-        """
         try:
             engine = create_engine(database_url, connect_args={"timeout": 30})
             self.logger.info("Connected to database successfully.")
             return engine
         except SQLAlchemyError as e:
-            self.logger.error("Database connection error: %s", str(e))
+            self.logger.error(f"Database connection error: {str(e)}")
             raise
 
     def _get_foreign_keys(self, schema_name, table_name):
-        """
-        Retrieve the foreign keys for a given table.
-        """
         try:
             inspector = inspect(self.engine)
             foreign_keys = inspector.get_foreign_keys(table_name, schema=schema_name)
@@ -54,9 +41,6 @@ class DatabaseHandler:
             return []
 
     def _get_indexes(self, schema_name, table_name):
-        """
-        Retrieve the indexes for a given table.
-        """
         try:
             inspector = inspect(self.engine)
             indexes = inspector.get_indexes(table_name, schema=schema_name)
@@ -75,9 +59,6 @@ class DatabaseHandler:
             return []
 
     def _get_constraints(self, schema_name, table_name):
-        """
-        Retrieve the constraints for a given table.
-        """
         try:
             inspector = inspect(self.engine)
             pk_constraint = inspector.get_pk_constraint(table_name, schema=schema_name)
@@ -99,12 +80,7 @@ class DatabaseHandler:
             return {}
 
     def schema_to_string(self, schema: dict) -> str:
-        """
-        Convert the schema dictionary to a formatted string with detailed information.
-
-        :param schema: The schema dictionary.
-        :return: A string representation of the schema with detailed information.
-        """
+        """Convert the schema dictionary to a formatted string with detailed information."""
         if not schema:
             self.logger.warning("Schema is empty.")
             return ""
@@ -153,11 +129,7 @@ class DatabaseHandler:
         return "\n".join(schema_str)
 
     def get_schema(self) -> dict:
-        """
-        Retrieve the database schema and return it as a dictionary.
-
-        :return: A dictionary where keys are table names and values are detailed information about columns.
-        """
+        """Retrieve the database schema and return it as a dictionary."""
         try:
             inspector = inspect(self.engine)
             schema = {}
@@ -188,20 +160,15 @@ class DatabaseHandler:
             if not schema:
                 self.logger.warning("No schema information was retrieved.")
             else:
-                self.logger.info("Schema retrieved with %d tables.", len(schema))
+                self.logger.info(f"Schema retrieved with {len(schema)} tables.")
 
             return schema
         except SQLAlchemyError as e:
-            self.logger.error("Error retrieving schema: %s", str(e))
+            self.logger.error(f"Error retrieving schema: {str(e)}")
             raise
 
     def execute_sql(self, query: str) -> pd.DataFrame:
-        """
-        Execute a SQL query and return the result as a DataFrame.
-
-        :param query: The SQL query to execute.
-        :return: A DataFrame containing the query results.
-        """
+        """Execute a SQL query and return the result as a DataFrame."""
         try:
             with self.engine.connect() as connection:
                 result = connection.execute(text(query))
@@ -210,9 +177,9 @@ class DatabaseHandler:
                 self.logger.warning("Query executed but returned no results.")
             else:
                 self.logger.info(
-                    "Query executed successfully and returned %d rows.", len(df)
+                    f"Query executed successfully and returned {len(df)} rows."
                 )
             return df
         except SQLAlchemyError as e:
-            self.logger.error("Error executing SQL query: %s", str(e))
+            self.logger.error(f"Error executing SQL query: {str(e)}")
             raise

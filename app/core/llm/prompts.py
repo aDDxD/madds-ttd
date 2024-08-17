@@ -2,12 +2,13 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 class Prompts:
-    JSON_SCHEMA_DESCRIPTION = "{'visualizations': [{'description': 'string', 'sql_query': 'string', 'visualization': 'string', 'plotly_express_function': 'string'}]}"
+    JSON_SCHEMA_DESCRIPTION = (
+        "{'visualizations': [{'description': 'string', 'sql_query': 'string', "
+        "'visualization': 'string', 'plotly_express_function': 'string'}]}"
+    )
 
     @staticmethod
-    def data_source_overview_prompt(
-        formatted_schema: str,
-    ) -> ChatPromptTemplate:
+    def data_source_overview_prompt(formatted_schema: str) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_template(
             template=(
                 f"You are connected to a database with the following schema:\n{formatted_schema}\n"
