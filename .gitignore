@@ -179,3 +179,4 @@ pyrightconfig.json
 # Data file
 app/data/*.csv
 app/data/*.bak
+app/.vectorized_data

@@ -30,7 +30,7 @@ class DatabaseHandler:
             self.logger.error("Error connecting to the database: %s", str(e))
             raise
 
-    def _schema_to_string(self, schema: dict) -> str:
+    def schema_to_string(self, schema: dict) -> str:
         """
         Convert the schema dictionary to a formatted string.
 
@@ -45,11 +45,11 @@ class DatabaseHandler:
         )
         return schema_str
 
-    def get_schema(self) -> str:
+    def get_schema(self) -> dict:
         """
-        Retrieve the database schema and convert it to a string.
+        Retrieve the database schema and return it as a dictionary.
 
-        :return: A string representation of the database schema.
+        :return: A dictionary where keys are table names and values are lists of columns.
         """
         try:
             inspector = inspect(self.engine)
@@ -73,10 +73,52 @@ class DatabaseHandler:
                     "Schema retrieved successfully with %d tables.", len(schema)
                 )
 
-            return self._schema_to_string(schema)
+            return schema
         except SQLAlchemyError as e:
             self.logger.error("Error retrieving schema: %s", str(e))
             raise
+
+    def get_foreign_keys(self, schema_name, table_name):
+        """
+        Retrieve the foreign keys for a given table.
+        """
+        try:
+            inspector = inspect(self.engine)
+            foreign_keys = inspector.get_foreign_keys(table_name, schema=schema_name)
+            return foreign_keys
+        except SQLAlchemyError as e:
+            self.logger.error(
+                f"Error retrieving foreign keys for {schema_name}.{table_name}: {str(e)}"
+            )
+            return []
+
+    def get_indexes(self, schema_name, table_name):
+        """
+        Retrieve the indexes for a given table.
+        """
+        try:
+            inspector = inspect(self.engine)
+            indexes = inspector.get_indexes(table_name, schema=schema_name)
+            return indexes
+        except SQLAlchemyError as e:
+            self.logger.error(
+                f"Error retrieving indexes for {schema_name}.{table_name}: {str(e)}"
+            )
+            return []
+
+    def get_constraints(self, schema_name, table_name):
+        """
+        Retrieve the constraints for a given table.
+        """
+        try:
+            inspector = inspect(self.engine)
+            constraints = inspector.get_pk_constraint(table_name, schema=schema_name)
+            return constraints
+        except SQLAlchemyError as e:
+            self.logger.error(
+                f"Error retrieving constraints for {schema_name}.{table_name}: {str(e)}"
+            )
+            return {}
 
     def execute_sql(self, query: str) -> pd.DataFrame:
         """
