@@ -5,7 +5,7 @@ import streamlit as st
 
 from app.core.llm.llm_service import LLMService
 from app.core.utils.config import Config
-from app.core.utils.logger import get_logger
+from app.core.utils.logger import Logger
 
 
 class StreamlitApp:
@@ -14,7 +14,7 @@ class StreamlitApp:
         st.set_page_config(layout="wide")
 
         # Initialize a logger for this class
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = Logger(self.__class__.__name__).get_logger()
 
         # Initialize the LLMService with your database URL
         self.database_url = Config.DW_DATABASE_URL
@@ -37,6 +37,7 @@ class StreamlitApp:
                 unsafe_allow_html=True,
             )
         except Exception as e:
+            self.logger.error(f"Error generating analysis description: {str(e)}")
             st.sidebar.error(f"Error generating analysis description: {str(e)}")
 
     def run(self):
@@ -69,7 +70,9 @@ class StreamlitApp:
 
                     # Display the raw response for debugging
                     with st.expander("Inspect LLM Response"):
-                        st.text_area(structured_response_json, height=400)
+                        st.text_area(
+                            "LLM Response", structured_response_json, height=400
+                        )
 
                     # Display the structured data and generate visualizations
                     st.write("## Generated Visualizations")

@@ -2,7 +2,7 @@ import pandas as pd
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.core.utils.logger import get_logger
+from app.core.utils.logger import Logger
 
 
 class DatabaseHandler:
@@ -12,7 +12,7 @@ class DatabaseHandler:
 
         :param database_url: The URL of the database to connect to.
         """
-        self.logger = get_logger(self.__class__.__name__)
+        self.logger = Logger(self.__class__.__name__).get_logger()
         self.engine = self._connect_to_database(database_url)
 
     def _connect_to_database(self, database_url: str):
@@ -24,10 +24,10 @@ class DatabaseHandler:
         """
         try:
             engine = create_engine(database_url, connect_args={"timeout": 30})
-            self.logger.info("Successfully connected to the database.")
+            self.logger.info("Connected to database successfully.")
             return engine
         except SQLAlchemyError as e:
-            self.logger.error("Error connecting to the database: %s", str(e))
+            self.logger.error("Database connection error: %s", str(e))
             raise
 
     def _get_foreign_keys(self, schema_name, table_name):
@@ -191,9 +191,7 @@ class DatabaseHandler:
             if not schema:
                 self.logger.warning("No schema information was retrieved.")
             else:
-                self.logger.info(
-                    "Schema retrieved successfully with %d tables.", len(schema)
-                )
+                self.logger.info("Schema retrieved with %d tables.", len(schema))
 
             return schema
         except SQLAlchemyError as e:
