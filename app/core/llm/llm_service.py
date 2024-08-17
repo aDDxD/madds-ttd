@@ -15,6 +15,7 @@ class VisualizationItem(BaseModel):
     description: str
     sql_query: str
     visualization: str
+    plotly_express_function: str
 
 
 class DataAnalysisResponse(BaseModel):
@@ -32,6 +33,7 @@ class LLMService:
         self.logger = get_logger(self.__class__.__name__)
         self.db_manager = DatabaseHandler(database_url)
         self.llm = ChatOpenAI(model=model_name, openai_api_key=Config.OPENAI_API_KEY)
+
         # Create an output parser using the Pydantic model
         self.output_parser = PydanticOutputParser(pydantic_object=DataAnalysisResponse)
 
@@ -76,20 +78,20 @@ class LLMService:
         prompt_template = ChatPromptTemplate.from_template(
             template=(
                 f"You are a professional Data Analyst with expertise in {db_type} databases. "
-                f"Given the following schema: {schema} "
+                f"Given the following database schema: {schema} "
                 f"your task is to generate meaningful insights from the natural language query: '{{{{query}}}}'. "
                 f"Provide as many visualizations as necessary to comprehensively address the query. "
                 f"Your response must be structured as a JSON object adhering to the following schema: "
                 "{json_schema} "
                 f"Each item in the 'visualizations' array should include: "
                 f"- 'description': A brief explanation of the suggested data visualization and its purpose. "
-                f"- 'sql_query': A valid SQL query that must compatible with the {db_type} database. Ensure the query only references columns available in the provided schema. "
+                f"- 'sql_query': A valid SQL query that must be compatible with the {db_type} database. Ensure the query only references columns available in the provided schema. "
                 f"- 'visualization': Suggested visualization type (e.g., bar, line, pie, etc.). "
+                f"- 'plotly_express_function': A complete Plotly Express function call to generate the suggested visualization, e.g., 'px.bar(data, x=\"column_name\", y=\"column_name\")'. "
                 "Your analysis should be both accurate and actionable, helping to uncover key trends, comparisons, and insights from the data."
             )
         )
-
-        schema_description = "{'visualizations': [{'description': 'string', 'sql_query': 'string', 'visualization': 'string'}]}"
+        schema_description = "{'visualizations': [{'description': 'string', 'sql_query': 'string', 'visualization': 'string', 'plotly_express_function': 'string'}]}"
 
         formatted_prompt = prompt_template.format(
             query=natural_language_query, json_schema=schema_description

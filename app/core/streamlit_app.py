@@ -61,6 +61,9 @@ class StreamlitApp:
                         st.write(f"- **Description:** {item.description}")
                         st.write(f"- **SQL Query:** {item.sql_query}")
                         st.write(f"- **Visualization Type:** {item.visualization}")
+                        st.write(
+                            f"- **Plotly Express Function:** {item.plotly_express_function}"
+                        )
 
                 except Exception as e:
                     st.error(f"Error processing query: {str(e)}")
