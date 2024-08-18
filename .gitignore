@@ -180,3 +180,7 @@ pyrightconfig.json
 app/data/*.csv
 app/data/*.bak
 app/data/.vectorized_data
+
+# Local util files
+x-misc.py
+x-output.txt
