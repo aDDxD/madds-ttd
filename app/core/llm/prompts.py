@@ -12,8 +12,20 @@ class Prompts:
         return ChatPromptTemplate.from_template(
             template=(
                 f"You are connected to a database with the following schema:\n{formatted_schema}\n"
-                "Provide a brief, end-user-friendly description of this database, "
-                "such as 'You are connected to the XYZ database, which holds information about ABC.'"
+                "Your task is to provide a clear and concise overview of this database, suitable for an end user. "
+                "The description should highlight the primary purpose and content of the database, including key tables and their relationships. "
+                "Ensure that the overview is easy to understand, even for users without technical expertise."
+            )
+        )
+
+    @staticmethod
+    def clarification_prompt(query: str) -> ChatPromptTemplate:
+        return ChatPromptTemplate.from_template(
+            template=(
+                f"The user has provided the following query: '{query}'. "
+                "Please clarify the intent of this query by specifying the type of insights they might be looking for, "
+                "such as trend analysis, comparison, distribution, correlation, or a specific data point. "
+                "Also, consider any contextual details that could help tailor the analysis to the user's needs."
             )
         )
 
@@ -21,31 +33,33 @@ class Prompts:
     def data_analysis_prompt(formatted_schema: str, db_type: str) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_template(
             template=(
-                f"You are an elite Data Analyst with profound expertise in {db_type} databases. "
-                f"Your task is to deliver highly accurate, contextually relevant, and insightful visualizations based on the natural language query: '{{{{query}}}}'. "
-                f"You are given the following database schema: {formatted_schema}. Use it to ensure the integrity and relevance of your analysis. "
-                f"Your focus should be on extracting and presenting insights that are directly aligned with the user's query. Follow these detailed guidelines to achieve the best results: \n\n"
-                f"1. **Understand the User's Intent**: Thoroughly analyze the natural language query to grasp the exact information the user is seeking. Consider whether the query is asking for trends, comparisons, distributions, correlations, or specific data points. Tailor your visualizations accordingly.\n"
-                f"2. **Respect the Query's Specificity**: If the user asks for insights about a specific entity (e.g., products, regions, time periods), ensure your analysis focuses precisely on that entity. Avoid generalizing to broader categories unless explicitly requested.\n"
-                f"3. **Prioritize Relevance Over Quantity**: Deliver only the most relevant visualizations. Avoid unnecessary or redundant charts. If the user requests a specific number of visualizations, adhere strictly to that number.\n"
-                f"4. **Contextual Precision**: Ensure that each visualization addresses a different aspect of the query. For example, if the query is about sales trends, consider time-based analyses like line charts or trend analyses. If the query is about product performance, use bar charts or scatter plots to compare metrics like sales or customer ratings.\n"
-                f"5. **Avoid Repetition**: Ensure that each visualization offers unique insights. Do not create multiple visualizations that convey the same information unless the query explicitly requests different perspectives (e.g., by region and by product).\n"
-                f"6. **Minimize Unnecessary Visualizations**: Keep the analysis concise. If a single visualization sufficiently answers the query, do not create additional visualizations. Focus on depth and accuracy rather than volume.\n"
-                f"7. **Use the Correct Visualization Types**: Choose the most appropriate visualization type for the data being analyzed. For example:\n"
-                f"   - Use **line charts** for trends over time.\n"
-                f"   - Use **bar charts** for comparing quantities across different categories.\n"
-                f"   - Use **pie charts** for showing proportions of a whole.\n"
-                f"   - Use **scatter plots** for identifying relationships between variables.\n"
-                f"   - Use **heatmaps** for showing data density or correlations.\n"
-                f"8. **Craft Clear and Insightful Descriptions**: Each visualization should include a brief yet informative description that explains what the visualization reveals in relation to the query. The description should focus on why the visualization was chosen and what insights it provides.\n"
-                f"9. **Precision in SQL Queries**: Generate SQL queries that are not only accurate but also optimized to retrieve exactly the data needed for the visualization. Ensure the query references only relevant columns and tables as per the provided schema.\n"
-                f"10. **Adhere to Output Format**: Your response must be structured as a JSON object adhering to the following schema:"
-                "{json_schema}"
-                f"Each item in the 'visualizations' array should include:\n"
-                f"   - 'description': A clear explanation of the suggested data visualization, emphasizing its relevance to the query.\n"
-                f"   - 'sql_query': A precise SQL query that retrieves the necessary data, fully compatible with the {db_type} database and schema provided.\n"
-                f"   - 'visualization': The most appropriate visualization type for the data being analyzed.\n"
-                f"   - 'plotly_express_function': A complete Plotly Express function call that generates the visualization, e.g., 'px.bar(data, x=\"column_name\", y=\"column_name\")'.\n"
-                f"Your analysis should be exceptionally accurate, directly aligned with the query, and provide deep, actionable insights that the user can immediately leverage."
+                f"You are a highly skilled data analyst with deep expertise in {db_type} databases. "
+                f"Your task is to generate insightful and accurate Python code based on the user's query: '{{{{query}}}}'. "
+                f"You have access to the following database schema:\n{formatted_schema}\n"
+                "Ensure that any SQL queries you generate reference tables and columns exactly as they appear in the schema. "
+                "Use only the table names and columns from the schema provided—do not invent or assume any tables or columns. "
+                f"Make sure the SQL queries are compatible with {db_type}, such as using 'TOP' instead of 'LIMIT' when working with SQL Server. "
+                "Your code should focus on providing the most relevant insights through data analysis and visualizations, specifically tailored to the user's query. "
+                "All visualizations should be created using Plotly Express, and the code must be suitable for execution in a Streamlit app. "
+                "Only return the executable Python code without any explanations, comments, or markdown. "
+                "Make sure the code is efficient, accurate, and directly aligned with the user's intent."
+            )
+        )
+
+    @staticmethod
+    def dashboard_creation_prompt(
+        formatted_schema: str, db_type: str
+    ) -> ChatPromptTemplate:
+        return ChatPromptTemplate.from_template(
+            template=(
+                f"Based on the query '{{{{query}}}}', your task is to generate the final Python code necessary to create a comprehensive dashboard using the provided schema. "
+                f"The code should include SQL queries that directly fetch data from the schema and use Plotly Express for all visualizations. "
+                f"Here is the schema again to ensure accuracy:\n{formatted_schema}\n"
+                "Ensure that the code references tables and columns accurately according to the provided schema and is fully prepared for execution in a Streamlit app. "
+                f"Ensure that the SQL queries are fully compatible with {db_type}, avoiding syntax errors (e.g., using 'TOP' instead of 'LIMIT' for SQL Server). "
+                "Use `os.getenv('DW_DATABASE_URL')` to connect to the database. "
+                "Always use SQLAlchemy to connect to the database. "
+                "Do not use or create any tables, columns, or data structures that are not explicitly mentioned in the schema provided. "
+                "The code should be concise, focused, and contain no extraneous text, comments, or markdown—only the executable Python code."
             )
         )

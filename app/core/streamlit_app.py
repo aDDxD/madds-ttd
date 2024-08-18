@@ -1,6 +1,9 @@
 import json
-import streamlit as st
+
 import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
+from plotly.subplots import make_subplots
 
 from app.core.llm.llm_service import LLMService
 from app.core.utils.config import Config
@@ -49,30 +52,14 @@ class StreamlitApp:
         if st.button("Submit Query"):
             if prompt:
                 try:
-                    structured_response = self.llm_service.process_data_analysis(prompt)
-                    self.logger.debug(f"Structured Response: {structured_response}")
+                    # Get the pure Python code from the LLM response
+                    python_code = self.llm_service.process_data_analysis(prompt)
 
-                    structured_response_json = json.dumps(
-                        structured_response.dict(), indent=2
-                    )
+                    st.write("## Generated Python Code")
+                    st.code(python_code, language="python")
 
-                    with st.expander("Inspect LLM Response"):
-                        st.text_area(
-                            "LLM Response", structured_response_json, height=400
-                        )
-
-                    st.write("## Generated Visualizations")
-                    for i, item in enumerate(structured_response.visualizations):
-                        st.write(f"### **Visualization {i + 1}:**")
-                        st.write(f"- **Description:** {item.description}")
-
-                        df = self.llm_service.data_handler.execute_sql(item.sql_query)
-                        plotly_code = item.plotly_express_function.replace("data", "df")
-                        chart = eval(plotly_code, {"df": df, "px": px})
-                        st.plotly_chart(chart)
-
-                        with st.expander("Show Data Used for the Chart"):
-                            st.dataframe(df)
+                    # Execute the generated Python code
+                    exec(python_code)
 
                 except Exception as e:
                     self.logger.error(
