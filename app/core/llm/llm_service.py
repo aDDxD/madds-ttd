@@ -71,10 +71,7 @@ class LLMService:
 
             # Step 3: Process the query with initial analysis
             prompt_template = Prompts.data_analysis_prompt(formatted_schema, db_type)
-            formatted_prompt = prompt_template.format(
-                query=natural_language_query,
-                json_schema=Prompts.JSON_SCHEMA_DESCRIPTION,
-            )
+            formatted_prompt = prompt_template.format(query=natural_language_query)
             self.logger.debug(
                 f"Formatted prompt for data analysis:\n{formatted_prompt}"
             )

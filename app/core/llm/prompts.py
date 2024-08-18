@@ -8,8 +8,8 @@ class Prompts:
         return ChatPromptTemplate.from_template(
             template=(
                 f"You are connected to a database with the following schema:\n{formatted_schema}\n"
-                "Your task is to provide a clear and concise overview of this database, suitable for an end user. "
-                "The description should highlight the primary purpose and content of the database, including key prompt ideas that a user can make it it wants to get an analysis from it, do not use markdown formatting. "
+                "Your task is to provide a clear and concise overview of this database, suitable for an end user but it needs to be very short. "
+                "The description should highlight the primary purpose and content of the database, including key prompt ideas that a user can make if they want to get an analysis from it, do not use markdown formatting. "
                 "Ensure that the overview is easy to understand, even for users without technical expertise."
             )
         )
@@ -60,6 +60,7 @@ class Prompts:
                 "Do not plot all charts one below the other, be creative with the page layout and feel free to add explaining texts to helpe the user."
                 "Also make the charts more interactive by adding dropdowns, sliders, etc."
                 "Lastly make them beautiful by adding colors, themes, etc."
+                "Do not use set_page_config() since the python code wil run inside an existing Streamlit app."
                 "Do not generate tabs on the sidebar, make all dashboards one below the other with clearly separation."
             )
         )
