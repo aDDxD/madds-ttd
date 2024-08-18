@@ -21,7 +21,7 @@ class StreamlitApp:
             st.session_state["analysis_description"] = None
 
     def show_database_overview(self):
-        """Displays the database overview in the sidebar."""
+        """Display the database overview in the sidebar."""
         st.sidebar.title("Database Overview")
         try:
             if st.session_state["analysis_description"] is None:
@@ -38,7 +38,7 @@ class StreamlitApp:
             st.sidebar.error(f"Error generating analysis description: {str(e)}")
 
     def run(self):
-        """Runs the main Streamlit application."""
+        """Run the main Streamlit application."""
         st.title("Talk to Your Data")
         st.subheader("Interact with your data using natural language queries")
 

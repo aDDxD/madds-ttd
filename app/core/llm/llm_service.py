@@ -1,10 +1,8 @@
 import re
 
-from langchain.output_parsers import PydanticOutputParser
 from langchain_openai import ChatOpenAI
 
 from app.core.data_sources.data_source_handler import DataSourceHandler
-from app.core.llm.models import DataAnalysisResponse
 from app.core.llm.prompts import Prompts
 from app.core.utils.config import Config
 from app.core.utils.logger import Logger
@@ -12,10 +10,10 @@ from app.core.utils.logger import Logger
 
 class LLMService:
     def __init__(self, data_source_url: str, model_name: str = "gpt-4o-mini"):
+        # Initialize logger, data handler, and LLM
         self.logger = Logger(self.__class__.__name__).get_logger()
         self.data_handler = DataSourceHandler.create(data_source_url)
         self.llm = ChatOpenAI(model=model_name, openai_api_key=Config().OPENAI_API_KEY)
-        self.output_parser = PydanticOutputParser(pydantic_object=DataAnalysisResponse)
 
     def generate_analysis_description(self):
         """Generate a concise analysis description based on the data source schema."""

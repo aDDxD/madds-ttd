@@ -5,6 +5,7 @@ class Logger:
     def __init__(self, name: str):
         self.logger = logging.getLogger(name)
         if not self.logger.handlers:
+            # Set up the logging handler and formatter
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
                 "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

@@ -2,20 +2,22 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 class Prompts:
-
     @staticmethod
     def data_source_overview_prompt(formatted_schema: str) -> ChatPromptTemplate:
+        # Template for generating a concise database overview
         return ChatPromptTemplate.from_template(
             template=(
                 f"You are connected to a database with the following schema:\n{formatted_schema}\n"
                 "Your task is to provide a clear and concise overview of this database, suitable for an end user but it needs to be very short. "
                 "The description should highlight the primary purpose and content of the database, including key prompt ideas that a user can make if they want to get an analysis from it, do not use markdown formatting. "
                 "Ensure that the overview is easy to understand, even for users without technical expertise."
+                "Suggested prompts based on the provided schema should always be present and above the tables overview"
             )
         )
 
     @staticmethod
     def data_analysis_prompt(formatted_schema: str, db_type: str) -> ChatPromptTemplate:
+        # Template for generating Python code for data analysis
         return ChatPromptTemplate.from_template(
             template=(
                 f"You are a highly skilled data analyst with deep expertise in {db_type} databases. "
@@ -33,6 +35,7 @@ class Prompts:
 
     @staticmethod
     def clarification_prompt(query: str) -> ChatPromptTemplate:
+        # Template for clarifying the user's query
         return ChatPromptTemplate.from_template(
             template=(
                 f"The user has provided the following query: '{query}'. "
@@ -46,6 +49,7 @@ class Prompts:
     def dashboard_creation_prompt(
         formatted_schema: str, db_type: str
     ) -> ChatPromptTemplate:
+        # Template for generating Python code to create a dashboard
         return ChatPromptTemplate.from_template(
             template=(
                 f"Based on the query '{{{{query}}}}', your task is to generate the final Python code necessary to create a comprehensive dashboard using the provided schema. "
@@ -57,10 +61,10 @@ class Prompts:
                 "Always use SQLAlchemy to connect to the database. "
                 "Do not use or create any tables, columns, or data structures that are not explicitly mentioned in the schema provided. "
                 "The code should be concise, focused, and contain no extraneous text, comments, or markdown—only the executable Python code."
-                "Do not plot all charts one below the other, be creative with the page layout and feel free to add explaining texts to helpe the user."
+                "Do not plot all charts one below the other, be creative with the page layout and feel free to add explaining texts to help the user."
                 "Also make the charts more interactive by adding dropdowns, sliders, etc."
                 "Lastly make them beautiful by adding colors, themes, etc."
-                "Do not use set_page_config() since the python code wil run inside an existing Streamlit app."
-                "Do not generate tabs on the sidebar, make all dashboards one below the other with clearly separation."
+                "Do not use set_page_config() since the Python code will run inside an existing Streamlit app."
+                "Do not generate tabs or other interactive items on the sidebar or in the code in general, make all dashboards and charts one below the other with clear separation, otherwise we lose the dashboard when using these components."
             )
         )

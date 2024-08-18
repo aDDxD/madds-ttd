@@ -8,6 +8,7 @@ from app.core.utils.logger import Logger
 
 class DatabaseHandler(DataSourceHandler):
     def __init__(self, database_url: str):
+        # Initialize logger and database connection
         self.logger = Logger(self.__class__.__name__).get_logger()
         self.engine = self._connect_to_database(database_url)
 
