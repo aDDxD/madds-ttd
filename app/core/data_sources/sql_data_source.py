@@ -1,5 +1,4 @@
-import pandas as pd
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.data_sources.data_source import DataSource
@@ -26,7 +25,7 @@ class SQLDataSource(DataSource):
             schema = {}
             schema_names = inspector.get_schema_names()
 
-            # Filter out system or default schemas for SQL Server and PostgreSQL
+            # Filter out system or default schemas for 'SQL Server' and 'PostgreSQL'
             filtered_schemas = [
                 schema_name
                 for schema_name in schema_names
