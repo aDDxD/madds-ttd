@@ -125,24 +125,6 @@ class SQLDataSource(DataSource):
 
         return "\n".join(schema_str)
 
-    def execute_sql(self, query: str, params: dict = None) -> pd.DataFrame:
-        try:
-            with self.engine.connect() as connection:
-                if params is None:
-                    params = {}
-                result = connection.execute(text(query), **params)
-                df = pd.DataFrame(result.fetchall(), columns=result.keys())
-            if df.empty:
-                self.logger.warning("Query executed but returned no results.")
-            else:
-                self.logger.info(
-                    f"Query executed successfully and returned {len(df)} rows."
-                )
-            return df
-        except SQLAlchemyError as e:
-            self.logger.error(f"Error executing SQL query: {str(e)}")
-            raise
-
     def _get_foreign_keys(self, schema_name, table_name):
         try:
             inspector = inspect(self.engine)

@@ -12,10 +12,6 @@ class DataSource(ABC):
     def schema_to_string(self, schema: dict) -> str:
         pass
 
-    @abstractmethod
-    def execute_sql(self, query: str) -> pd.DataFrame:
-        pass
-
     @staticmethod
     def create(source: str) -> "DataSource":
         if source.startswith(("postgresql://", "mssql+pyodbc://")):

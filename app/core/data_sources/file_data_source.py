@@ -28,8 +28,3 @@ class FileDataSource(DataSource):
         for column, dtype in schema.items():
             schema_str += f"  - {column}: {dtype}\n"
         return schema_str
-
-    def execute_sql(self, query: str) -> pd.DataFrame:
-        raise NotImplementedError(
-            "SQL execution is not supported for file-based data sources."
-        )
