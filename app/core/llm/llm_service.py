@@ -11,16 +11,16 @@ from app.core.utils.logger import Logger
 class LLMService:
     def __init__(self, source: str, model_name: str = "gpt-4o-mini"):
         self.logger = Logger(self.__class__.__name__).get_logger()
-        self.data_handler = DataSource.create(source)
+        self.data_source = DataSource.create(source)
         self.llm = ChatOpenAI(model=model_name, openai_api_key=Config().OPENAI_API_KEY)
 
     def generate_analysis_description(self):
         try:
             self.logger.info("Retrieving schema from data source...")
-            raw_schema = self.data_handler.get_schema()
+            raw_schema = self.data_source.get_schema()
             self.logger.info(f"Schema retrieved: {len(raw_schema)} tables found.")
 
-            formatted_schema = self.data_handler.schema_to_string(raw_schema)
+            formatted_schema = self.data_source.schema_to_string(raw_schema)
             self.logger.info("Schema formatted successfully.")
 
             if not formatted_schema:
@@ -60,9 +60,9 @@ class LLMService:
             )
 
             # Step 2: Retrieve and format the schema
-            raw_schema = self.data_handler.get_schema()
+            raw_schema = self.data_source.get_schema()
             self.logger.info(f"Schema retrieved with {len(raw_schema)} tables.")
-            formatted_schema = self.data_handler.schema_to_string(raw_schema)
+            formatted_schema = self.data_source.schema_to_string(raw_schema)
 
             # Step 3: Process the query with initial analysis
             prompt_template = Prompts.data_analysis_prompt(formatted_schema, db_type)
