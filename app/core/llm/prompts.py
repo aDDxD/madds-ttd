@@ -2,16 +2,29 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 class Prompts:
-    @staticmethod
-    def data_source_overview_prompt(formatted_schema: str) -> ChatPromptTemplate:
-        # Template for generating a concise database overview
+
+    def data_source_overview_prompt(relevant_schema_text: str) -> ChatPromptTemplate:
         return ChatPromptTemplate.from_template(
             template=(
-                f"You are connected to a database with the following schema:\n{formatted_schema}\n"
-                "Your task is to provide a clear and concise overview of this database, suitable for an end user but it needs to be very short. "
-                "The description should highlight the primary purpose and content of the database, including key prompt ideas that a user can make if they want to get an analysis from it, do not use markdown formatting. "
-                "Ensure that the overview is easy to understand, even for users without technical expertise."
-                "Suggested prompts based on the provided schema should always be present and above the tables overview"
+                "You are provided with a brief overview of a data source schema obtained through Retrieval-Augmented Generation (RAG). "
+                "The schema details below give an understanding of the data source's structure and content:"
+                f"{relevant_schema_text}"
+                "Your task is to generate a short, concise summary of this database in one or two sentences, focusing on its main purpose or function. "
+                "Following the summary, provide 3 to 5 example questions that an end-user might ask to get insights or perform analyses using this data source. "
+                "The questions should be practical, relevant, and aligned with the data available in the schema. "
+                "Do not include any formatting or additional explanations beyond these questions."
+            )
+        )
+
+    @staticmethod
+    def clarification_prompt(query: str) -> ChatPromptTemplate:
+        # Template for clarifying the user's query
+        return ChatPromptTemplate.from_template(
+            template=(
+                f"The user has provided the following query: '{query}'. "
+                "Please clarify the intent of this query by specifying the type of insights they might be looking for, "
+                "such as trend analysis, comparison, distribution, correlation, or a specific data point. "
+                "Also, consider any contextual details that could help tailor the analysis to the user's needs."
             )
         )
 
@@ -30,18 +43,6 @@ class Prompts:
                 "All visualizations should be created using Plotly Express, and the code must be suitable for execution in a Streamlit app. "
                 "Only return the executable Python code without any explanations, comments, or markdown. "
                 "Make sure the code is efficient, accurate, and directly aligned with the user's intent."
-            )
-        )
-
-    @staticmethod
-    def clarification_prompt(query: str) -> ChatPromptTemplate:
-        # Template for clarifying the user's query
-        return ChatPromptTemplate.from_template(
-            template=(
-                f"The user has provided the following query: '{query}'. "
-                "Please clarify the intent of this query by specifying the type of insights they might be looking for, "
-                "such as trend analysis, comparison, distribution, correlation, or a specific data point. "
-                "Also, consider any contextual details that could help tailor the analysis to the user's needs."
             )
         )
 
