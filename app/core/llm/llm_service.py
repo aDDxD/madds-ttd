@@ -3,6 +3,7 @@ import re
 from langchain_openai import ChatOpenAI
 
 from app.core.data_sources.data_source import DataSource
+from app.core.llm.chroma_service import ChromaService
 from app.core.llm.prompts import Prompts
 from app.core.utils.config import Config
 from app.core.utils.logger import Logger
@@ -13,33 +14,56 @@ class LLMService:
         self.logger = Logger(self.__class__.__name__).get_logger()
         self.data_source = DataSource.create(source)
         self.llm = ChatOpenAI(model=model_name, openai_api_key=Config().OPENAI_API_KEY)
+        self.chroma_service = ChromaService()
+        self._initialize_chroma_db()
+
+    def _initialize_chroma_db(self):
+        try:
+            existing_docs = self.chroma_service.collection.get()
+
+            if not existing_docs or len(existing_docs.get("documents", [])) == 0:
+                self.logger.info(
+                    "Vectorizing schema and storing in ChromaDB for RAG..."
+                )
+                raw_schema = self.data_source.get_schema()
+                formatted_schema = self.data_source.schema_to_string(raw_schema)
+
+                schema_chunks = formatted_schema.split("\n\n")
+                self.chroma_service.add_schema_vectors(schema_chunks)
+                self.logger.info("Schema stored in ChromaDB successfully.")
+            else:
+                self.logger.info("Schema data already available in ChromaDB.")
+        except Exception as e:
+            self.logger.error(f"Error initializing ChromaDB: {str(e)}")
+            raise
 
     def generate_analysis_description(self):
         try:
-            self.logger.info("Retrieving schema from data source...")
-            raw_schema = self.data_source.get_schema()
-            self.logger.info(f"Schema retrieved: {len(raw_schema)} tables found.")
+            self.logger.info("Retrieving schema description using RAG...")
 
-            formatted_schema = self.data_source.schema_to_string(raw_schema)
-            self.logger.info("Schema formatted successfully.")
+            chroma_results = self.chroma_service.query_schema(
+                "database schema overview"
+            )
 
-            if not formatted_schema:
-                self.logger.error(
-                    "Schema is empty. Unable to generate analysis description."
-                )
-                raise ValueError(
-                    "Schema could not be retrieved. Ensure the data source is accessible."
-                )
+            if not chroma_results:
+                self.logger.error("No schema data found in ChromaDB.")
+                raise ValueError("No schema data available for analysis.")
 
-            prompt_template = Prompts.data_source_overview_prompt(formatted_schema)
-            self.logger.info("Generating description using the language model...")
+            relevant_schema_texts = [doc["text"] for doc in chroma_results]
+
+            if not relevant_schema_texts:
+                self.logger.error("No valid schema text found in ChromaDB results.")
+                raise ValueError("No valid schema text found in ChromaDB results.")
+
+            relevant_schema_text = "\n\n".join(relevant_schema_texts)
+
+            prompt_template = Prompts.data_source_overview_prompt(relevant_schema_text)
             description_prompt = prompt_template.format()
-            self.logger.debug(f"Prompt for LLM:\n{description_prompt}")
 
             response = self.llm.invoke(
                 [{"role": "system", "content": description_prompt}]
             )
-            self.logger.info("Description generated successfully.")
+            self.logger.info("Analysis description generated successfully.")
             return response.content.strip()
 
         except Exception as e:
@@ -50,35 +74,35 @@ class LLMService:
         self, natural_language_query: str, db_type: str = "SQL Server"
     ) -> str:
         try:
-            # Step 1: Clarify user intent
             clarification_prompt = Prompts.clarification_prompt(natural_language_query)
             clarification_response = self.llm.invoke(
                 [{"role": "system", "content": clarification_prompt.format()}]
             )
             self.logger.info(
-                f"Clarification response: {clarification_response.content}"
+                f"Clarification response from LLM: {clarification_response.content}"
             )
 
-            # Step 2: Retrieve and format the schema
-            raw_schema = self.data_source.get_schema()
-            self.logger.info(f"Schema retrieved with {len(raw_schema)} tables.")
-            formatted_schema = self.data_source.schema_to_string(raw_schema)
+            self.logger.info("Retrieving schema for analysis using RAG...")
+            chroma_results = self.chroma_service.query_schema(natural_language_query)
 
-            # Step 3: Process the query with initial analysis
-            prompt_template = Prompts.data_analysis_prompt(formatted_schema, db_type)
+            if not chroma_results:
+                self.logger.error("No relevant schema found in ChromaDB for analysis.")
+                raise ValueError("No relevant schema found in ChromaDB.")
+
+            relevant_schema_text = "\n\n".join([doc["text"] for doc in chroma_results])
+
+            prompt_template = Prompts.data_analysis_prompt(
+                relevant_schema_text, db_type
+            )
             formatted_prompt = prompt_template.format(query=natural_language_query)
-            self.logger.debug(
-                f"Formatted prompt for data analysis:\n{formatted_prompt}"
-            )
 
             response = self.llm.invoke(
                 [{"role": "system", "content": formatted_prompt}]
             )
-            self.logger.info("Received initial response from LLM.")
+            self.logger.info("Initial response from LLM received.")
 
-            # Step 4: Generate the dashboard code
             dashboard_prompt = Prompts.dashboard_creation_prompt(
-                formatted_schema, db_type
+                relevant_schema_text, db_type
             )
             dashboard_response = self.llm.invoke(
                 [
@@ -90,14 +114,10 @@ class LLMService:
                     }
                 ]
             )
-            self.logger.info(
-                f"Dashboard creation response: {dashboard_response.content}"
-            )
+            self.logger.info("Dashboard code generated by LLM successfully.")
 
-            # Step 5: Remove any markdown or extraneous text from the response
             final_code = dashboard_response.content.strip()
 
-            # Remove markdown formatting like ```python and ```
             final_code = re.sub(r"```(?:python)?\n", "", final_code)
             final_code = re.sub(r"```", "", final_code)
 

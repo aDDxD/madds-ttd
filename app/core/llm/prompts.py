@@ -65,6 +65,8 @@ class Prompts:
                 "Also make the charts more interactive by adding dropdowns, sliders, etc."
                 "Lastly make them beautiful by adding colors, themes, etc."
                 "Do not use set_page_config() since the Python code will run inside an existing Streamlit app."
+                "Do not use st.cache since is deprecated and will be removed soon."
+                "Take extra care to not generate a code that will cause this error: 'Error processing query: name 'engine' is not defined'"
                 "Do not generate tabs or other interactive items on the sidebar or in the code in general, make all dashboards and charts one below the other with clear separation, otherwise we lose the dashboard when using these components."
             )
         )
