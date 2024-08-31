@@ -2,21 +2,19 @@ import re
 
 from langchain_openai import ChatOpenAI
 
-from app.core.data_sources.data_source_handler import DataSourceHandler
+from app.core.data_sources.data_source import DataSource
 from app.core.llm.prompts import Prompts
 from app.core.utils.config import Config
 from app.core.utils.logger import Logger
 
 
 class LLMService:
-    def __init__(self, data_source_url: str, model_name: str = "gpt-4o-mini"):
-        # Initialize logger, data handler, and LLM
+    def __init__(self, source: str, model_name: str = "gpt-4o-mini"):
         self.logger = Logger(self.__class__.__name__).get_logger()
-        self.data_handler = DataSourceHandler.create(data_source_url)
+        self.data_handler = DataSource.create(source)
         self.llm = ChatOpenAI(model=model_name, openai_api_key=Config().OPENAI_API_KEY)
 
     def generate_analysis_description(self):
-        """Generate a concise analysis description based on the data source schema."""
         try:
             self.logger.info("Retrieving schema from data source...")
             raw_schema = self.data_handler.get_schema()
@@ -51,7 +49,6 @@ class LLMService:
     def process_data_analysis(
         self, natural_language_query: str, db_type: str = "SQL Server"
     ) -> str:
-        """Process the natural language query and return the pure Python code needed to generate the dashboard."""
         try:
             # Step 1: Clarify user intent
             clarification_prompt = Prompts.clarification_prompt(natural_language_query)

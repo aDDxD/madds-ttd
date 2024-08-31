@@ -13,8 +13,8 @@ class StreamlitApp:
 
         # Initialize logger and services
         self.logger = Logger(self.__class__.__name__).get_logger()
-        self.database_url = Config().DW_DATABASE_URL
-        self.llm_service = LLMService(data_source_url=self.database_url)
+        self.source = Config().DW_DATABASE_URL
+        self.llm_service = LLMService(source=self.source)
 
         # Initialize session state for analysis description
         if "analysis_description" not in st.session_state:
