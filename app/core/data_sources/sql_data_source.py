@@ -26,7 +26,26 @@ class SQLDataSource(DataSource):
             schema = {}
             schema_names = inspector.get_schema_names()
 
-            for schema_name in schema_names:
+            # Filter out system or default schemas for SQL Server and PostgreSQL
+            filtered_schemas = [
+                schema_name
+                for schema_name in schema_names
+                if not (
+                    (
+                        self.engine.dialect.name == "mssql"
+                        and schema_name in ["master", "model", "msdb", "tempdb"]
+                    )
+                    or (
+                        self.engine.dialect.name == "postgresql"
+                        and (
+                            schema_name == "information_schema"
+                            or schema_name.startswith("pg_")
+                        )
+                    )
+                )
+            ]
+
+            for schema_name in filtered_schemas:
                 for table_name in inspector.get_table_names(schema=schema_name):
                     columns_info = inspector.get_columns(table_name, schema=schema_name)
                     foreign_keys = self._get_foreign_keys(schema_name, table_name)
