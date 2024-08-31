@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.data_sources.data_source import DataSource
@@ -50,6 +50,9 @@ class SQLDataSource(DataSource):
                     foreign_keys = self._get_foreign_keys(schema_name, table_name)
                     indexes = self._get_indexes(schema_name, table_name)
                     constraints = self._get_constraints(schema_name, table_name)
+                    data_summary = self._get_data_summary(
+                        schema_name, table_name, columns_info
+                    )
 
                     schema[f"{schema_name}.{table_name}"] = {
                         "columns": [
@@ -64,6 +67,7 @@ class SQLDataSource(DataSource):
                         "foreign_keys": foreign_keys,
                         "indexes": indexes,
                         "constraints": constraints,
+                        "data_summary": data_summary,
                     }
 
             if not schema:
@@ -119,6 +123,16 @@ class SQLDataSource(DataSource):
                         table_str += (
                             f"    - {uc['name']} on {', '.join(uc['column_names'])}\n"
                         )
+
+            data_summary = details.get("data_summary", {})
+            if data_summary:
+                table_str += "  Data Summary:\n"
+                for col_name, summary in data_summary.items():
+                    table_str += f"    - {col_name}: "
+                    if "min" in summary and "max" in summary:
+                        table_str += f"Min: {summary['min']}, Max: {summary['max']}\n"
+                    if "distinct_values" in summary:
+                        table_str += f"Distinct Values: {', '.join(map(str, summary['distinct_values']))}\n"
 
             schema_str.append(table_str)
 
@@ -182,3 +196,62 @@ class SQLDataSource(DataSource):
                 f"Error retrieving constraints for {schema_name}.{table_name}: {str(e)}"
             )
             return {}
+
+    def _get_data_summary(self, schema_name, table_name, columns_info):
+        """Get data summary for each column in the table."""
+        data_summary = {}
+        try:
+            with self.engine.connect() as connection:
+                for column in columns_info:
+                    column_name = column["name"]
+                    column_type = str(column["type"])
+
+                    quoted_column_name = self.engine.dialect.identifier_preparer.quote(
+                        column_name
+                    )
+
+                    if (
+                        "INT" in column_type
+                        or "NUMERIC" in column_type
+                        or "FLOAT" in column_type
+                        or "DECIMAL" in column_type
+                    ):
+                        # Numeric columns: Get min and max values
+                        min_max_query = text(
+                            f"SELECT MIN({quoted_column_name}) AS min_value, MAX({quoted_column_name}) AS max_value FROM {schema_name}.{table_name}"
+                        )
+                        result = connection.execute(min_max_query).fetchone()
+                        # Use integer indexing because result is a tuple
+                        data_summary[column_name] = {
+                            "min": result[0],
+                            "max": result[1],
+                        }
+                    elif "CHAR" in column_type or "TEXT" in column_type:
+                        if self.engine.dialect.name == "postgresql":
+                            # PostgreSQL uses LIMIT
+                            distinct_query = text(
+                                f"SELECT DISTINCT {quoted_column_name} FROM {schema_name}.{table_name} LIMIT 10"
+                            )
+                        elif self.engine.dialect.name == "mssql":
+                            # SQL Server uses TOP
+                            distinct_query = text(
+                                f"SELECT DISTINCT TOP 10 {quoted_column_name} FROM {schema_name}.{table_name}"
+                            )
+                        else:
+                            # Default fallback, if needed
+                            distinct_query = text(
+                                f"SELECT DISTINCT {quoted_column_name} FROM {schema_name}.{table_name} LIMIT 10"
+                            )
+
+                        result = connection.execute(distinct_query).fetchall()
+                        # Use integer indexing for each row
+                        data_summary[column_name] = {
+                            "distinct_values": [row[0] for row in result],
+                        }
+
+        except SQLAlchemyError as e:
+            self.logger.error(
+                f"Error retrieving data summary for {schema_name}.{table_name}: {str(e)}"
+            )
+
+        return data_summary
