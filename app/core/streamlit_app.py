@@ -66,6 +66,11 @@ class StreamlitApp:
                         st.code(python_code, language="python")
 
                 except Exception as e:
+                    # Show the generated Python code at the bottom of the page
+                    with st.expander("View Generated Python Code", expanded=False):
+                        st.write("## Generated Python Code")
+                        st.code(python_code, language="python")
+
                     self.logger.error(
                         f"Error processing query: {str(e)}", exc_info=True
                     )

@@ -20,14 +20,14 @@ This project uses the AdventureWorks2022 (OLTP) and AdventureWorksDW2022 (Data W
 -- Restore AdventureWorks OLTP
 RESTORE DATABASE [AdventureWorks2022]
 FROM DISK = N'/var/opt/mssql/backup/AdventureWorks2022.bak'
-WITH MOVE 'AdventureWorks2022_Data' TO '/var/opt/mssql/data/AdventureWorks2022.mdf',
-     MOVE 'AdventureWorks2022_Log' TO '/var/opt/mssql/data/AdventureWorks2022_log.ldf',
+WITH MOVE 'AdventureWorks2022' TO '/var/opt/mssql/data/AdventureWorks2022.mdf',
+     MOVE 'AdventureWorks2022_log' TO '/var/opt/mssql/data/AdventureWorks2022_log.ldf',
      REPLACE;
 
 -- Restore AdventureWorks DW
 RESTORE DATABASE [AdventureWorksDW2022]
 FROM DISK = N'/var/opt/mssql/backup/AdventureWorksDW2022.bak'
-WITH MOVE 'AdventureWorksDW2022_Data' TO '/var/opt/mssql/data/AdventureWorksDW2022.mdf',
-     MOVE 'AdventureWorksDW2022_Log' TO '/var/opt/mssql/data/AdventureWorksDW2022_log.ldf',
+WITH MOVE 'AdventureWorksDW2022' TO '/var/opt/mssql/data/AdventureWorksDW2022.mdf',
+     MOVE 'AdventureWorksDW2022_log' TO '/var/opt/mssql/data/AdventureWorksDW2022_log.ldf',
      REPLACE;
 ```
