@@ -69,6 +69,6 @@ class StreamlitApp:
                     self.logger.error(
                         f"Error processing query: {str(e)}", exc_info=True
                     )
-                    st.error(f"Error processing query: {str(e)}")
+                    st.warning(f"Error processing query, please try again.")
             else:
                 st.warning("Please enter a query.")
